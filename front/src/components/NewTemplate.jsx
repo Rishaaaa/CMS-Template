@@ -18,6 +18,7 @@ const NewTemplate = () => {
     fetch(`/api/template/${templateId}`)
       .then((response) => response.json())
       .then((data) => {
+        // Update fields, areaWidth, and areaHeight based on the fetched data
         setFields(data.fields);
         setAreaWidth(data.areaWidth);
         setAreaHeight(data.areaHeight);
@@ -27,12 +28,9 @@ const NewTemplate = () => {
       .catch((error) => console.error('Error:', error));
   }, [templateId]);
 
-  const columnCount = 3; // Define the number of columns
-
-  // Calculate the number of rows based on the maximum row value in the fields
-  const rowCount = fields.reduce((maxRow, field) => {
-    return field.row > maxRow ? field.row : maxRow;
-  }, 0) + 1; // Add 1 to account for zero-based indexing
+  // Use rowCount and columnCount from selectedTemplateData
+  const rowCount = selectedTemplateData?.rowCount || 0;
+  const columnCount = selectedTemplateData?.columnCount || 12; // Default to 12 columns
 
   // Create an array of row and column objects
   const cellData = [];
@@ -50,20 +48,40 @@ const NewTemplate = () => {
     e.preventDefault();
     let allFieldsValid = true;
 
-    // Validate email and phone fields
     fields.forEach((field) => {
       if (field.type === 'email') {
+        // Validation for email fields
         if (field.required && !e.target[field.name].value) {
           allFieldsValid = false;
         } else if (e.target[field.name].value && !/\S+@\S+\.\S+/.test(e.target[field.name].value)) {
           allFieldsValid = false;
         }
-      }
-
-      if (field.type === 'phone') {
+      } else if (field.type === 'phone') {
+        // Validation for phone fields
         if (field.required && !e.target[field.name].value) {
           allFieldsValid = false;
         } else if (e.target[field.name].value && !/^\d{10,12}$/.test(e.target[field.name].value)) {
+          allFieldsValid = false;
+        }
+      } else if (field.type === 'address') {
+        // Validation for address fields
+        const streetName = `${field.name}_street`;
+        const cityName = `${field.name}_city`;
+        const stateName = `${field.name}_state`;
+        const zipName = `${field.name}_zip`;
+
+        if (field.required) {
+          if (
+            !e.target[streetName].value ||
+            !e.target[cityName].value ||
+            !e.target[stateName].value ||
+            !e.target[zipName].value
+          ) {
+            allFieldsValid = false;
+          }
+        }
+
+        if (e.target[zipName].value && !/^[1-9][0-9]{2}\s?[0-9]{3}$/.test(e.target[zipName].value)) {
           allFieldsValid = false;
         }
       }
@@ -85,6 +103,7 @@ const NewTemplate = () => {
       <div className="CreateFarmer">
         <div className="container mt-4">
           <h2>Template</h2>
+
           {showTemplateForm && selectedTemplateData && (
             <div className="container mt-4">
               <h3>Template Form: {selectedTemplateData.templateName}</h3>
@@ -92,7 +111,7 @@ const NewTemplate = () => {
               <form onSubmit={handleSubmit}>
                 <div
                   style={{
-                    border: '1px solid #ccc', // Border for the entire template area
+                    border: '1px solid #ccc',
                     padding: '16px',
                   }}
                 >
@@ -101,24 +120,23 @@ const NewTemplate = () => {
                       style={{
                         display: 'grid',
                         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-                        gap: '16px',
-                        borderCollapse: 'collapse', // Merge cell borders
+                        gridTemplateRows: `repeat(${rowCount}, 1fr)`,
+                        gap: '8px',
+                        borderCollapse: 'collapse',
                       }}
                     >
-                      {cellData.map(({ row, column, field }, index) => (
+                      {fields.map((field, index) => (
                         <div
                           key={index}
                           style={{
-                            border: '1px solid transparent', // Transparent cell border
+                            border: '1px solid transparent',
                             padding: '16px',
                             textAlign: 'center',
+                            gridColumn: `${field.column + 1} / span ${field.colSpan || 1}`,
+                            gridRow: `${field.row + 1} / span ${field.rowSpan || 1}`,
                           }}
                         >
-                          {field && (
-                            <div>
-                              <Field field={field} />
-                            </div>
-                          )}
+                          <Fields field={field} />
                         </div>
                       ))}
                     </div>
@@ -138,7 +156,8 @@ const NewTemplate = () => {
   );
 };
 
-const Field = ({ field }) => {
+
+const Fields = ({ field }) => {
   const { label, name, type, required } = field;
 
   const [isValid, setIsValid] = useState(true);
@@ -148,13 +167,33 @@ const Field = ({ field }) => {
       setIsValid(false);
     } else if (type === 'phone' && !/^\d{10,12}$/.test(value)) {
       setIsValid(false);
+    }
+    else if (type === 'address') {
+      if (name.endsWith('_zip')) {
+        // Validate the "Pincode" field
+        if (!/^[1-9][0-9]{2}\s?[0-9]{3}$/.test(value)) {
+          setIsValid(false);
+        } else {
+          setIsValid(true);
+        }
+      }
     } else {
       setIsValid(true);
     }
   };
 
   const handleInputChange = (e) => {
-    const { value } = e.target;
+    const { name, value } = e.target;
+
+    if (name.endsWith('_zip')) {
+      // Validate the "Pincode" field
+      if (!/^[1-9][0-9]{2}\s?[0-9]{3}$/.test(value)) {
+        setIsValid(false);
+      } else {
+        setIsValid(true);
+      }
+    }
+
     validateField(value);
   };
 
@@ -188,6 +227,7 @@ const Field = ({ field }) => {
       )}
       {type === 'select' && (
         <select name={name} className="form-control">
+
           <option value="option1">Option 1</option>
           <option value="option2">Option 2</option>
         </select>
@@ -249,9 +289,62 @@ const Field = ({ field }) => {
         </div>
       )}
 
+      {type === 'address' && (
+        <div
+          style={{
+            backgroundColor: 'white',
+            border: '1px solid #ccc',
+            padding: '10px',
+            borderRadius: '4px',
+          }}
+        >
+          <input
+            type="text"
+            name={`${name}_street`}
+            className={`form-control ${isValid ? '' : 'is-invalid'}`}
+            placeholder="Street"
+            required={required}
+            onChange={handleInputChange}
+          />
+          <br />
+          <input
+            type="text"
+            name={`${name}_city`}
+            className={`form-control ${isValid ? '' : 'is-invalid'}`}
+            placeholder="City"
+            required={required}
+            onChange={handleInputChange}
+          />
+          <br />
+          <input
+            type="text"
+            name={`${name}_state`}
+            className={`form-control ${isValid ? '' : 'is-invalid'}`}
+            placeholder="State"
+            required={required}
+            onChange={handleInputChange}
+          />
+          <br />
+          <input
+            type="text"
+            name={`${name}_zip`}
+            className={`form-control ${isValid ? '' : 'is-invalid'}`}
+            placeholder="Zip Code"
+            required={required}
+            onChange={handleInputChange}
+          />
+          {!isValid && <div className="invalid-feedback">Invalid pincode</div>}
+        </div>
+      )}
+
     </div>
   );
 };
 
 export default NewTemplate;
+
+
+
+
+
 

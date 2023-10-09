@@ -3,8 +3,10 @@
 import FieldTypes from './FieldTypes';
 import React from 'react';
 import { useDrag } from 'react-dnd';
+import { themes, generateShades } from './themes';
 
 const AdditionalFields = ({ onFieldDrop }) => {
+
     const additionalFields = [
         { type: FieldTypes.TEXT, label: 'Text Box', name: 'textbox1', required: false },
         { type: FieldTypes.RADIO, label: 'Radio Button', name: 'radio1', required: false },
@@ -16,6 +18,12 @@ const AdditionalFields = ({ onFieldDrop }) => {
         { type: FieldTypes.THREE_FIELD_COLUMN, label: 'Three Field', name: 'threefield', required: false },
         { type: FieldTypes.DATE, label: 'Date', name: 'date', required: false },
         { type: FieldTypes.TIME, label: 'Time', name: 'time', required: false },
+        {
+            type: FieldTypes.ADDRESS,
+            label: 'Address',
+            name: 'address',
+            required: false,
+        },
     ];
 
     return (

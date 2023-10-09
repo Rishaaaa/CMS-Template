@@ -178,3 +178,40 @@ p {
 .App {
     height: 100vh;
 }
+
+.preview-card {
+    position: fixed;
+    width: 50%;
+    height: 100%;
+    border: 1px solid #ccc;
+    z-index: 1000;
+}
+
+.bg-default {
+    background-color: #FFFFFF;
+}
+
+.bg-green {
+    background-color: #4CAF50;
+}
+
+.bg-blue {
+    background-color: #2196F3;
+}
+
+.bg-yellow {
+    background-color: #FFC107;
+}
+
+.bg-red {
+    background-color: #F44336;
+}
+
+.bg-pink {
+    background-color: #E91E63;
+}
+
+.style-input {
+    width: 100%;
+    box-sizing: border-box;
+}
